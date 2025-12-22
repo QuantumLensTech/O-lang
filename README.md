@@ -1,424 +1,181 @@
 # O — Universal Multi-State Programming Language
 
-<p align="center">
-  <strong>The Foundation for Multi-State Computing</strong>
-</p>
-
-<p align="center">
-  <a href="#what-is-o">What is O?</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#features">Features</a> •
-  <a href="#examples">Examples</a> •
-  <a href="#roadmap">Roadmap</a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/C%2B%2B-17%2F20-blue.svg" alt="C++17/20"/>
-  <img src="https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-green.svg" alt="License"/>
-  <img src="https://img.shields.io/badge/status-alpha-orange.svg" alt="Status"/>
-</p>
-
----
+**O is a C++ extension for N-state computing.**
 
 ## What is O?
 
-**O** is a universal multi-state extension of C++ that enables programming for emerging hardware architectures beyond binary computing. It provides:
-
-- **N-state types**: Binary (2), ternary (3), octovalent (8), quantum (superposition), etc.
-- **Generic operations**: Arithmetic, logic, control flow that scale across state spaces
-- **Zero-cost abstractions**: Compile-time polymorphism, no runtime overhead
-- **Hardware agnostic**: Write once, run on binary, ternary, quantum, or neuromorphic hardware
+O extends C++ with support for arbitrary N-state types, enabling programming for:
+- **Binary systems** (N=2) — Traditional computing
+- **Ternary systems** (N=3) — Balanced ternary processors
+- **Octovalent systems** (N=8) — 3ODS, 3-qubit quantum
+- **Arbitrary N** — Future multi-state hardware
 
 ```cpp
-#include <o/core.hpp>
+#include <o/o.hpp>
 
-// Binary (N=2) - works on all hardware
-octo<2> flag = 1;
-
-// Ternary (N=3) - for balanced ternary processors
-octo<3> trit = {0, 1, 2};
-
-// Octovalent (N=8) - for 3-qubit quantum systems or 3ODS
-octo<8> octval = 5;  // One of 8 discrete states
-
-// Arbitrary N-states
-octo<16> hexval;     // 16-state system
-octo<256> byte;      // Full byte range
+O<2> bit = 1;      // Binary
+O<3> trit = 2;     // Ternary
+O<8> oct = 5;      // Octovalent (3ODS)
+O<16> hex = 15;    // Hexadecimal
 ```
-
-### The O Philosophy
-
-**Binary computing is a special case, not the universal solution.**
-
-O recognizes that:
-- Quantum systems naturally have 2^n states (n qubits)
-- Multi-level memory cells store 3, 4, or more states per cell
-- Neuromorphic hardware uses variable-state neurons
-- Topological quantum computers operate on non-binary state spaces
-
-**O provides the language infrastructure to program these systems directly**, without forcing everything through a binary abstraction layer.
-
----
-
-## What is O NOT?
-
-❌ **Not a competitor to C++** — O **extends** C++ with multi-state primitives  
-❌ **Not tied to 3ODS** — 3ODS is **one application** of O (using N=8)  
-❌ **Not binary-only** — O supports **any N ≥ 2**  
-❌ **Not theoretical** — O works on current binary hardware (via emulation)
-
-**Analogy**: 
-- **C++** is to binary computing what **O** is to multi-state computing
-- **Qt/Boost** is to C++ what **3ODS** is to O (specialized library on top)
-
----
 
 ## Quick Start
 
-### Installation
-
-```bash
-git clone https://github.com/your-org/O-Language.git
-cd O-Language
-
-# Header-only library, just include it
-cp -r include/o /usr/local/include/
-```
-
-### Hello Multi-State World
-
 ```cpp
-#include <o/core.hpp>
-#include <iostream>
+#include <o/o.hpp>
+using namespace o;
 
 int main() {
-    // Ternary logic (3 states: 0, 1, 2)
-    octo<3> trit_a = 1;
-    octo<3> trit_b = 2;
+    // Create octovalent value
+    O<8> state = 3;
     
-    // Addition wraps around in 3-state space
-    octo<3> result = trit_a + trit_b;  // 1 + 2 = 0 (mod 3)
+    // Arithmetic (modulo 8)
+    state = state + O<8>(2);  // state = 5
+    state++;                  // state = 6
     
-    std::cout << "In ternary: 1 + 2 = " 
-              << result.value() << std::endl;
+    // Logic operations (min/max)
+    O<8> a = 2, b = 5;
+    O<8> result = a & b;      // min(2, 5) = 2
+    result = a | b;           // max(2, 5) = 5
+    result = ~a;              // 8-1-2 = 5
     
-    // Octovalent logic (8 states: 0-7)
-    octo<8> oct_a = 5;
-    octo<8> oct_b = 6;
-    
-    octo<8> oct_result = oct_a + oct_b;  // 5 + 6 = 3 (mod 8)
-    
-    std::cout << "In octovalent: 5 + 6 = " 
-              << oct_result.value() << std::endl;
+    // Ranges
+    for (auto s : O_range<8>()) {
+        // Iterate through all 8 states
+    }
     
     return 0;
 }
 ```
 
-**Output**:
+## Features
+
+### ✅ Core Types
+- **O<N>** — Universal multi-state type
+- **O_array<N, Size>** — Arrays of N-state values
+- Type-safe, constexpr-compatible
+
+### ✅ Logic Systems
+- **Łukasiewicz logic** (min/max) — Default
+- **Product logic** — Multiplicative operations
+- **Gödel logic** — Binary-like negation
+- Custom truth tables
+
+### ✅ Functional Programming
+- **map**, **filter**, **reduce**
+- **compose**, **curry**
+- **Maybe** monad
+
+### ✅ Hardware Channels
+- **OctoBIN** — Binary CPU emulation (always available)
+- **OctoQUANT** — Quantum processors (N = 2^k)
+- **OctoTOPO** — Topological quantum (native N=8)
+
+### ✅ Quantum Support
+- **QuantumState<N>** — Superposition states
+- **Quantum gates** — Hadamard, phase, rotation
+- **Entanglement** — Multi-qudit states
+
+## File Structure
+
 ```
-In ternary: 1 + 2 = 0
-In octovalent: 5 + 6 = 3
+include/o/
+├── o.hpp               # Main header (include everything)
+├── core.hpp            # O<N> type definition
+├── logic.hpp           # Logical operations
+├── operators.hpp       # Arithmetic operations
+├── ranges.hpp          # Iterators and ranges
+├── functional.hpp      # Functional programming
+├── channels.hpp        # Hardware abstraction
+└── quantum.hpp         # Quantum computing support
 ```
-
----
-
-## Core Features
-
-### 1. Universal Multi-State Type
-
-```cpp
-template<uint8_t N>
-class octo {
-    static_assert(N >= 2 && N <= 256);
-    
-    // States: [0, N-1]
-    uint8_t value() const;
-    
-    // Full operator support
-    octo operator+(octo other) const;  // Modular arithmetic
-    octo operator-(octo other) const;
-    octo operator*(octo other) const;
-    octo operator/(octo other) const;
-    
-    // Comparison
-    bool operator==(octo other) const;
-    bool operator<(octo other) const;
-};
-```
-
-### 2. Arrays & Matrices
-
-```cpp
-// Array of N-state values
-octo_array<3, 10> ternary_array;  // 10 ternary values
-
-// Matrix operations
-octo_matrix<8, 4, 4> octovalent_matrix;
-```
-
-### 3. Generic Control Flow
-
-```cpp
-// Multi-state conditional
-o_switch<8>(octval) {
-    o_case(0): /* state 0 */; break;
-    o_case(1): /* state 1 */; break;
-    // ... cases 2-6 ...
-    o_case(7): /* state 7 */; break;
-}
-
-// Range-based iteration
-for (auto state : octo_range<3>()) {
-    // Iterates 0, 1, 2
-}
-```
-
-### 4. Compile-Time Validation
-
-```cpp
-// These compile
-octo<8> valid = 5;       // ✓ 5 is in [0,7]
-octo<3> trit = 2;        // ✓ 2 is in [0,2]
-
-// These don't compile
-octo<8> invalid = 9;     // ✗ Compile error: 9 > 7
-octo<3> overflow = 5;    // ✗ Compile error: 5 > 2
-```
-
----
 
 ## Examples
 
-### Quantum State Simulation (3 qubits = 8 states)
-
+### Binary (N=2)
 ```cpp
-#include <o/quantum.hpp>
-
-// 3-qubit quantum register
-quantum_register<3> qubits;  // Internally: octo<8>
-
-// Apply Hadamard gate
-qubits.hadamard(0);  // Superposition on qubit 0
-
-// Measure
-octo<8> result = qubits.measure();  // Collapse to one of 8 basis states
+O<2> flag = 0;
+flag = ~flag;  // Toggle: 0 → 1
 ```
 
-### Ternary Logic Processor
-
+### Ternary (N=3)
 ```cpp
-#include <o/logic.hpp>
+O<3> trit = 0;  // {0, 1, 2}
+trit++;         // 0 → 1
+trit++;         // 1 → 2
+trit++;         // 2 → 0 (cyclic)
+```
 
-// Balanced ternary: {-1, 0, +1} mapped to {0, 1, 2}
-octo<3> trit_not(octo<3> x) {
-    // NOT: 0→2, 1→1, 2→0
-    return octo<3>(2 - x.value());
-}
+### Octovalent (N=8) — 3ODS
+```cpp
+O<8> octant = 3;
+O<8> next = octant + O<8>(1);  // 3 + 1 = 4
 
-octo<3> trit_and(octo<3> a, octo<3> b) {
-    return octo<3>(std::min(a.value(), b.value()));
+// Iterate all octants
+for (auto o : O_range<8>()) {
+    // Process octant o
 }
 ```
 
-### 3ODS Integration (N=8 specialization)
-
+### Quantum Computing
 ```cpp
-#include <o/core.hpp>
-#include <3ods/octant.hpp>  // 3ODS library on top of O
+using namespace o::quantum;
 
-// O provides the foundation (octo<8>)
-octo<8> state = 5;
-
-// 3ODS adds geometric semantics
-Octant octant(state);  // Converts 5 → spatial position (+,-,+)
+QuantumState<2> qubit(O<2>(0));  // |0⟩
+qubit = hadamard(qubit);         // (|0⟩ + |1⟩)/√2
+O<2> result = qubit.measure();   // Collapse to 0 or 1
 ```
 
----
+## Building
 
-## Architecture
+```bash
+# Header-only library, just include:
+g++ -std=c++17 -I include your_code.cpp -o your_program
 
-### The O Stack
-
-```
-┌───────────────────────────────────┐
-│  User Code (C++ with O types)    │  <- You write this
-├───────────────────────────────────┤
-│  O Standard Library               │  <- o/core.hpp, o/operators.hpp
-│  (Templates & Algorithms)         │
-├───────────────────────────────────┤
-│  O Compiler Extensions            │  <- Validation, optimizations
-│  (Compile-time checks)            │
-├───────────────────────────────────┤
-│  C++ Compiler (C++17/20)          │  <- GCC, Clang, MSVC
-├───────────────────────────────────┤
-│  Backend (Binary/Quantum/Custom)  │  <- Hardware abstraction
-└───────────────────────────────────┘
+# Or with CMake:
+cmake -B build -DCMAKE_CXX_STANDARD=17
+cmake --build build
 ```
 
-### How O Relates to Other Systems
+## Philosophy
 
-```
-O Language (Universal)
-    ├── Specialization: 3ODS (N=8, geometric semantics)
-    ├── Specialization: Ternary Computing (N=3)
-    ├── Specialization: Quantum (N=2^n)
-    └── Specialization: Custom (any N)
-```
+**O is minimal.** Like C, it provides:
+- A fundamental type: `O<N>`
+- Essential operations: arithmetic, logic, ranges
+- Extensions are optional
 
-**Key Principle**: O is the **foundation layer**. Systems like 3ODS **build on top** of O, adding domain-specific semantics (geometry, time, ethics) while O provides the multi-state substrate.
+**O is universal.** It works for:
+- N=2 (binary) — Compatible with existing hardware
+- N=3, 4, 8, 16 — Multi-state processors
+- N=2^k — Quantum systems (qubits, qutrits, etc.)
 
----
+**O is explicit.** No hidden costs:
+- Zero-cost abstractions
+- Compile-time evaluation (constexpr)
+- No runtime overhead vs. hand-coded logic
 
-## Project Structure
+## Relationship with 3ODS
 
-```
-O-Language/
-├── include/
-│   └── o/
-│       ├── core.hpp           # Fundamental types (octo<N>)
-│       ├── operators.hpp      # Arithmetic, logic operators
-│       ├── control.hpp        # Multi-state control flow
-│       ├── ranges.hpp         # Iteration utilities
-│       ├── quantum.hpp        # Quantum computing helpers
-│       └── meta.hpp           # Compile-time utilities
-├── docs/
-│   ├── SPEC.md               # Formal language specification
-│   ├── INTEGRATION.md        # How O relates to 3ODS
-│   ├── QUICKSTART.md         # Getting started guide
-│   └── REFERENCE.md          # Complete API reference
-├── tests/
-│   ├── test_core.cpp         # Core type tests
-│   ├── test_operators.cpp    # Operator tests
-│   └── test_quantum.cpp      # Quantum simulation tests
-├── examples/
-│   ├── ternary_logic.cpp     # Balanced ternary example
-│   ├── quantum_3qubit.cpp    # 3-qubit simulation
-│   └── 3ods_integration.cpp  # Using O with 3ODS
-└── CMakeLists.txt
-```
+**O is independent of 3ODS.**
 
----
+- **O** = Universal language for N-state computing
+- **3ODS** = Specific operating system architecture using O with N=8
 
-## Language Specification
-
-### Type System
-
-| Type | Description | Valid Range |
-|------|-------------|-------------|
-| `octo<N>` | N-state scalar | [0, N-1] |
-| `octo_array<N,M>` | Array of M N-state values | - |
-| `octo_matrix<N,R,C>` | R×C matrix of N-state values | - |
-
-### Operations
-
-| Category | Operations | Notes |
-|----------|------------|-------|
-| Arithmetic | `+`, `-`, `*`, `/`, `%` | Modular arithmetic (mod N) |
-| Logical | `&`, `|`, `^`, `~` | N-valued logic |
-| Comparison | `==`, `!=`, `<`, `>`, `<=`, `>=` | Total ordering |
-| Assignment | `=`, `+=`, `-=`, ... | Standard semantics |
-
-### Control Flow
-
-```cpp
-// Multi-state switch
-o_switch<N>(value) { /* ... */ }
-
-// Conditional
-if (octo_all_equal(a, b, c)) { /* ... */ }
-
-// Loops
-for (auto s : octo_range<N>()) { /* ... */ }
-```
-
----
-
-## Roadmap
-
-### Phase 1: Foundation (Current)
-- ✅ Core type system (`octo<N>`)
-- ✅ Basic operators
-- ✅ Compile-time validation
-- ✅ Header-only library
-
-### Phase 2: Expanded Library (Q1 2025)
-- [ ] `o/ranges.hpp` — Range utilities
-- [ ] `o/quantum.hpp` — Quantum helpers
-- [ ] `o/concurrent.hpp` — Multi-state threading
-- [ ] Comprehensive test suite
-
-### Phase 3: Compiler Integration (Q2-Q3 2025)
-- [ ] Clang plugin for enhanced diagnostics
-- [ ] Custom optimizations for multi-state operations
-- [ ] LLVM backend integration
-
-### Phase 4: Hardware Backends (Q4 2025+)
-- [ ] Ternary processor support
-- [ ] Quantum computer interfaces (Qiskit, Cirq)
-- [ ] Neuromorphic hardware backends
-
----
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-Areas seeking help:
-- Test coverage expansion
-- Additional backend implementations
-- Documentation improvements
-- Example applications
-
----
+3ODS is **one application** of O, not the only one. O can be used for:
+- Binary systems (N=2)
+- Ternary processors (N=3)
+- Quantum computing (N=2^k)
+- Any N-state hardware
 
 ## License
 
-**CC BY-NC-SA 4.0** — Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+CC BY-NC-SA 4.0
 
-- ✅ Share and adapt for research/education
-- ✅ Attribution required
-- ❌ No commercial use without permission
+## Author
 
----
-
-## Citation
-
-```bibtex
-@software{o_language_2025,
-  author = {Ané, Jean-Christophe},
-  title = {O: Universal Multi-State Programming Language},
-  year = {2025},
-  url = {https://github.com/your-org/O-Language}
-}
-```
+Jean-Christophe Ané  
+December 2025
 
 ---
 
-## Contact
-
-**Jean-Christophe Ané** — Creator  
-📧 quantumlens.research@gmail.com  
-🐙 [@QuantumLensTech](https://github.com/QuantumLensTech)
-
----
-
-## Related Projects
-
-- **3ODS** — Three-Dimensional Octovalent Duodecavalent System (uses O with N=8)
-- **QuantumLENS** — Scientific visualization environment (uses O quantum module)
-- **OctoBrain** — Octovalent AI system (uses O for multi-state neural networks)
-
----
-
-<p align="center">
-  <em>"Binary is a special case. O is universal."</em>
-</p>
-
-<p align="center">
-  ⭐ Star if interested in multi-state computing
-</p>
-
----
-
-**© 2025 Jean-Christophe Ané • CC BY-NC-SA 4.0**
+**O: Where binary is just N=2.**
