@@ -2,9 +2,10 @@
 #define O_RANGES_HPP
 
 /**
- * O Language - Range Utilities
+ * @file ranges.hpp
+ * @brief Range Utilities for O<N> Types
  * 
- * Iteration and range-based operations for N-state systems.
+ * Provides iteration and range-based operations for N-state systems.
  * 
  * @author Jean-Christophe Ané
  * @version 1.0
@@ -13,66 +14,75 @@
 
 #include "core.hpp"
 #include <iterator>
+#include <vector>
 
 namespace o {
 
 // ═══════════════════════════════════════════════════════════════════════════
-// RANGE OF ALL N STATES
+// RANGE ITERATOR
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Iterator for N-state range
+ * @brief Iterator for range of N states
+ * 
+ * Allows iterating through all possible states of O<N>.
  */
 template<uint8_t N>
-class octo_range_iterator {
+class O_range_iterator {
     uint8_t current_;
     
 public:
     using iterator_category = std::forward_iterator_tag;
-    using value_type = octo<N>;
+    using value_type = O<N>;
     using difference_type = std::ptrdiff_t;
-    using pointer = const octo<N>*;
-    using reference = octo<N>;
+    using pointer = const O<N>*;
+    using reference = O<N>;
     
-    explicit constexpr octo_range_iterator(uint8_t start) noexcept 
+    explicit constexpr O_range_iterator(uint8_t start) noexcept 
         : current_(start) {}
     
-    constexpr octo<N> operator*() const noexcept {
-        return octo<N>(current_);
+    constexpr O<N> operator*() const noexcept {
+        return O<N>(current_);
     }
     
-    constexpr octo_range_iterator& operator++() noexcept {
+    constexpr O_range_iterator& operator++() noexcept {
         ++current_;
         return *this;
     }
     
-    constexpr octo_range_iterator operator++(int) noexcept {
+    constexpr O_range_iterator operator++(int) noexcept {
         auto temp = *this;
         ++(*this);
         return temp;
     }
     
-    constexpr bool operator==(const octo_range_iterator& other) const noexcept {
+    constexpr bool operator==(const O_range_iterator& other) const noexcept {
         return current_ == other.current_;
     }
     
-    constexpr bool operator!=(const octo_range_iterator& other) const noexcept {
+    constexpr bool operator!=(const O_range_iterator& other) const noexcept {
         return !(*this == other);
     }
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// RANGE CLASS
+// ═══════════════════════════════════════════════════════════════════════════
+
 /**
- * @brief Range object for iterating all N states
+ * @brief Range of all possible states [0, N-1]
  * 
- * @example
- * for (auto state : octo_range<8>()) {
- *     // state takes values octo<8>(0), octo<8>(1), ..., octo<8>(7)
+ * Usage:
+ * ```cpp
+ * for (auto state : O_range<8>()) {
+ *     // Iterate through all 8 states
  * }
+ * ```
  */
 template<uint8_t N>
-class octo_range {
+class O_range {
 public:
-    using iterator = octo_range_iterator<N>;
+    using iterator = O_range_iterator<N>;
     
     constexpr iterator begin() const noexcept {
         return iterator(0);
@@ -87,166 +97,254 @@ public:
     }
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TRANSFORMATION UTILITIES
-// ═══════════════════════════════════════════════════════════════════════════
-
 /**
- * @brief Apply function to all N states
- * 
- * @param func Function to apply (signature: void(octo<N>))
- * 
- * @example
- * octo_for_each<8>([](auto state) {
- *     std::cout << state.value() << " ";
- * });
- * // Output: 0 1 2 3 4 5 6 7
+ * @brief Factory function for range
  */
-template<uint8_t N, typename Func>
-constexpr void octo_for_each(Func func) {
-    for (uint8_t i = 0; i < N; ++i) {
-        func(octo<N>(i));
-    }
+template<uint8_t N>
+constexpr O_range<N> all_states() noexcept {
+    return O_range<N>();
 }
 
-/**
- * @brief Transform range of states
- * 
- * @param func Transform function (signature: R(octo<N>))
- * @return Array of transformed values
- * 
- * @example
- * auto doubled = octo_transform<4>([](auto x) { 
- *     return x.value() * 2; 
- * });
- * // doubled = {0, 2, 4, 6}
- */
-template<uint8_t N, typename Func>
-constexpr auto octo_transform(Func func) {
-    using R = decltype(func(octo<N>(0)));
-    std::array<R, N> result;
-    
-    for (uint8_t i = 0; i < N; ++i) {
-        result[i] = func(octo<N>(i));
-    }
-    
-    return result;
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBRANGE (PARTIAL ITERATION)
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Filter states by predicate
- * 
- * @param pred Predicate function (signature: bool(octo<N>))
- * @return Vector of states satisfying predicate
- * 
- * @example
- * auto evens = octo_filter<8>([](auto x) { 
- *     return x.value() % 2 == 0; 
- * });
- * // evens = {0, 2, 4, 6}
+ * @brief Iterator for subrange [start, end)
  */
-template<uint8_t N, typename Pred>
-constexpr std::array<octo<N>, N> octo_filter(Pred pred) {
-    std::array<octo<N>, N> result{};
-    size_t count = 0;
+template<uint8_t N>
+class O_subrange_iterator {
+    uint8_t current_;
+    uint8_t end_;
     
-    for (uint8_t i = 0; i < N; ++i) {
-        octo<N> state(i);
-        if (pred(state)) {
-            result[count++] = state;
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = O<N>;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const O<N>*;
+    using reference = O<N>;
+    
+    constexpr O_subrange_iterator(uint8_t start, uint8_t end) noexcept 
+        : current_(start), end_(end) {}
+    
+    constexpr O<N> operator*() const noexcept {
+        return O<N>(current_);
+    }
+    
+    constexpr O_subrange_iterator& operator++() noexcept {
+        if (current_ < end_) ++current_;
+        return *this;
+    }
+    
+    constexpr O_subrange_iterator operator++(int) noexcept {
+        auto temp = *this;
+        ++(*this);
+        return temp;
+    }
+    
+    constexpr bool operator==(const O_subrange_iterator& other) const noexcept {
+        return current_ == other.current_;
+    }
+    
+    constexpr bool operator!=(const O_subrange_iterator& other) const noexcept {
+        return !(*this == other);
+    }
+};
+
+/**
+ * @brief Subrange [start, end)
+ */
+template<uint8_t N>
+class O_subrange {
+    uint8_t start_;
+    uint8_t end_;
+    
+public:
+    using iterator = O_subrange_iterator<N>;
+    
+    constexpr O_subrange(O<N> start, O<N> end) noexcept 
+        : start_(start.value()), end_(end.value()) {}
+    
+    constexpr iterator begin() const noexcept {
+        return iterator(start_, end_);
+    }
+    
+    constexpr iterator end() const noexcept {
+        return iterator(end_, end_);
+    }
+    
+    constexpr size_t size() const noexcept {
+        return (end_ > start_) ? (end_ - start_) : 0;
+    }
+};
+
+/**
+ * @brief Factory function for subrange
+ */
+template<uint8_t N>
+constexpr O_subrange<N> range(O<N> start, O<N> end) noexcept {
+    return O_subrange<N>(start, end);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STRIDE ITERATOR
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Iterator with custom stride
+ * 
+ * Allows iterating with step size > 1.
+ */
+template<uint8_t N>
+class O_stride_iterator {
+    uint8_t current_;
+    uint8_t stride_;
+    
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = O<N>;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const O<N>*;
+    using reference = O<N>;
+    
+    constexpr O_stride_iterator(uint8_t start, uint8_t stride) noexcept 
+        : current_(start), stride_(stride) {}
+    
+    constexpr O<N> operator*() const noexcept {
+        return O<N>(current_);
+    }
+    
+    constexpr O_stride_iterator& operator++() noexcept {
+        current_ = (current_ + stride_) % N;
+        if (current_ == 0 && stride_ > 0) {
+            current_ = N;  // End marker
+        }
+        return *this;
+    }
+    
+    constexpr O_stride_iterator operator++(int) noexcept {
+        auto temp = *this;
+        ++(*this);
+        return temp;
+    }
+    
+    constexpr bool operator==(const O_stride_iterator& other) const noexcept {
+        return current_ == other.current_;
+    }
+    
+    constexpr bool operator!=(const O_stride_iterator& other) const noexcept {
+        return !(*this == other);
+    }
+};
+
+/**
+ * @brief Strided range
+ */
+template<uint8_t N>
+class O_strided_range {
+    uint8_t stride_;
+    
+public:
+    using iterator = O_stride_iterator<N>;
+    
+    explicit constexpr O_strided_range(uint8_t stride) noexcept 
+        : stride_(stride) {}
+    
+    constexpr iterator begin() const noexcept {
+        return iterator(0, stride_);
+    }
+    
+    constexpr iterator end() const noexcept {
+        return iterator(N, stride_);
+    }
+};
+
+/**
+ * @brief Factory function for strided range
+ */
+template<uint8_t N>
+constexpr O_strided_range<N> stride(uint8_t step) noexcept {
+    return O_strided_range<N>(step);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ARRAY ITERATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Generate all possible arrays of given size
+ * 
+ * Warning: Generates N^Size combinations, can be huge!
+ */
+template<uint8_t N, size_t Size>
+class O_array_generator {
+    std::vector<O_array<N, Size>> combinations_;
+    
+    void generate(O_array<N, Size>& current, size_t pos) {
+        if (pos == Size) {
+            combinations_.push_back(current);
+            return;
+        }
+        
+        for (uint8_t i = 0; i < N; ++i) {
+            current[pos] = O<N>(i);
+            generate(current, pos + 1);
         }
     }
     
-    // Fill remaining with default (state 0)
-    for (size_t i = count; i < N; ++i) {
-        result[i] = octo<N>(0);
+public:
+    O_array_generator() {
+        O_array<N, Size> temp;
+        generate(temp, 0);
     }
     
+    const std::vector<O_array<N, Size>>& all() const {
+        return combinations_;
+    }
+    
+    size_t size() const {
+        return combinations_.size();
+    }
+};
+
+/**
+ * @brief Generate all arrays (use with caution for large Size or N)
+ */
+template<uint8_t N, size_t Size>
+O_array_generator<N, Size> all_arrays() {
+    return O_array_generator<N, Size>();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTER OPERATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Filter states matching predicate
+ */
+template<uint8_t N, typename Predicate>
+std::vector<O<N>> filter(Predicate pred) {
+    std::vector<O<N>> result;
+    for (auto state : O_range<N>()) {
+        if (pred(state)) {
+            result.push_back(state);
+        }
+    }
     return result;
 }
 
 /**
- * @brief Fold (reduce) over all N states
- * 
- * @param init Initial value
- * @param func Fold function (signature: T(T, octo<N>))
- * @return Accumulated result
- * 
- * @example
- * auto sum = octo_fold<4>(0, [](int acc, auto x) { 
- *     return acc + x.value(); 
- * });
- * // sum = 0 + 1 + 2 + 3 = 6
+ * @brief Count states matching predicate
  */
-template<uint8_t N, typename T, typename Func>
-constexpr T octo_fold(T init, Func func) {
-    T result = init;
-    
-    for (uint8_t i = 0; i < N; ++i) {
-        result = func(result, octo<N>(i));
-    }
-    
-    return result;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// COUNTING UTILITIES
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Count states satisfying predicate
- * 
- * @example
- * auto num_even = octo_count_if<8>([](auto x) { 
- *     return x.value() % 2 == 0; 
- * });
- * // num_even = 4
- */
-template<uint8_t N, typename Pred>
-constexpr size_t octo_count_if(Pred pred) {
+template<uint8_t N, typename Predicate>
+size_t count_if(Predicate pred) {
     size_t count = 0;
-    
-    for (uint8_t i = 0; i < N; ++i) {
-        if (pred(octo<N>(i))) {
+    for (auto state : O_range<N>()) {
+        if (pred(state)) {
             ++count;
         }
     }
-    
     return count;
-}
-
-/**
- * @brief Check if any state satisfies predicate
- */
-template<uint8_t N, typename Pred>
-constexpr bool octo_any_of(Pred pred) {
-    for (uint8_t i = 0; i < N; ++i) {
-        if (pred(octo<N>(i))) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * @brief Check if all states satisfy predicate
- */
-template<uint8_t N, typename Pred>
-constexpr bool octo_all_of(Pred pred) {
-    for (uint8_t i = 0; i < N; ++i) {
-        if (!pred(octo<N>(i))) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * @brief Check if no states satisfy predicate
- */
-template<uint8_t N, typename Pred>
-constexpr bool octo_none_of(Pred pred) {
-    return !octo_any_of<N>(pred);
 }
 
 } // namespace o

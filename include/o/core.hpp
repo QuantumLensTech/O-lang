@@ -2,9 +2,11 @@
 #define O_CORE_HPP
 
 /**
- * O Language - Core Types
+ * @file core.hpp
+ * @brief O Language Core - Universal Multi-State Type
  * 
- * Fundamental multi-state types for N-state computing.
+ * Defines the fundamental O<N> type for N-state computing.
+ * This is the foundation of the entire O language.
  * 
  * @author Jean-Christophe Ané
  * @version 1.0
@@ -12,391 +14,290 @@
  */
 
 #include <cstdint>
-#include <array>
-#include <stdexcept>
 #include <type_traits>
+#include <limits>
+#include <stdexcept>
+#include <array>
 
 namespace o {
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FUNDAMENTAL TYPE: octo<N>
+// CORE TYPE: O<N> - Universal Multi-State Value
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief N-state fundamental type
+ * @brief Universal multi-state type
  * 
- * Represents a value with N discrete states: {0, 1, ..., N-1}
+ * O<N> represents a value that can take one of N discrete states,
+ * where N can be any positive integer from 2 to 256.
  * 
- * @tparam N Number of states (must be in [2, 256])
+ * Examples:
+ * - O<2>   : Binary (classical computing)
+ * - O<3>   : Ternary (balanced ternary processors)
+ * - O<8>   : Octovalent (3ODS, 3-qubit quantum)
+ * - O<16>  : Hexadecimal
+ * - O<256> : Full byte range
  * 
- * @example
- * octo<2> binary_flag = 1;       // Binary: 0 or 1
- * octo<3> ternary_trit = 2;      // Ternary: 0, 1, or 2
- * octo<8> octovalent = 5;        // Octovalent: 0-7
+ * @tparam N Number of states (2-256)
  */
 template<uint8_t N>
-class octo {
-    static_assert(N >= 2 && N <= 256, "N must be in [2, 256]");
+class O {
+    static_assert(N >= 2 && N <= 256, "N must be between 2 and 256");
     
 private:
-    uint8_t value_;  // Invariant: value_ ∈ [0, N-1]
+    uint8_t value_;
     
 public:
-    // ───────────────────────────────────────────────────────────────────────
-    // Type Properties
-    // ───────────────────────────────────────────────────────────────────────
-    
-    static constexpr uint8_t num_states = N;
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Constructors
-    // ───────────────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONSTRUCTORS
+    // ═══════════════════════════════════════════════════════════════════════
     
     /**
-     * @brief Default constructor (initializes to state 0)
+     * @brief Default constructor - initializes to state 0
      */
-    constexpr octo() noexcept : value_(0) {}
+    constexpr O() noexcept : value_(0) {}
     
     /**
-     * @brief Explicit constructor from integer
-     * @param v Value (will be taken modulo N)
+     * @brief Construct from integer value
+     * @param val Initial value (must be in range [0, N-1])
+     * @throws std::out_of_range if val >= N
      */
-    constexpr explicit octo(uint8_t v) noexcept : value_(v % N) {}
+    explicit constexpr O(uint8_t val) : value_(val) {
+        if (val >= N) {
+            throw std::out_of_range("O<N> value out of range");
+        }
+    }
     
     /**
      * @brief Copy constructor
      */
-    constexpr octo(const octo& other) noexcept = default;
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Accessors
-    // ───────────────────────────────────────────────────────────────────────
+    constexpr O(const O&) noexcept = default;
     
     /**
-     * @brief Get underlying value
-     * @return Value in [0, N-1]
+     * @brief Move constructor
+     */
+    constexpr O(O&&) noexcept = default;
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // ASSIGNMENT
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    constexpr O& operator=(const O&) noexcept = default;
+    constexpr O& operator=(O&&) noexcept = default;
+    
+    constexpr O& operator=(uint8_t val) {
+        if (val >= N) {
+            throw std::out_of_range("O<N> value out of range");
+        }
+        value_ = val;
+        return *this;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // ACCESSORS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /**
+     * @brief Get the current value
+     * @return Current state value (0 to N-1)
      */
     constexpr uint8_t value() const noexcept { return value_; }
     
     /**
-     * @brief Implicit conversion to uint8_t
+     * @brief Get the number of possible states
+     * @return N
      */
-    constexpr operator uint8_t() const noexcept { return value_; }
+    static constexpr uint8_t num_states() noexcept { return N; }
     
     /**
-     * @brief Check if value is valid (always true due to invariant)
+     * @brief Check if this is the minimum value (state 0)
      */
-    constexpr bool is_valid() const noexcept { 
-        return value_ < N; 
+    constexpr bool is_min() const noexcept { return value_ == 0; }
+    
+    /**
+     * @brief Check if this is the maximum value (state N-1)
+     */
+    constexpr bool is_max() const noexcept { return value_ == N - 1; }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // STATIC FACTORY METHODS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    static constexpr O min_value() noexcept { return O(0); }
+    static constexpr O max_value() noexcept { return O(N - 1); }
+    
+    /**
+     * @brief Create O<N> from normalized float [0.0, 1.0]
+     */
+    static constexpr O from_normalized(float f) noexcept {
+        if (f <= 0.0f) return min_value();
+        if (f >= 1.0f) return max_value();
+        return O(static_cast<uint8_t>(f * (N - 1) + 0.5f));
     }
     
-    // ───────────────────────────────────────────────────────────────────────
-    // Assignment
-    // ───────────────────────────────────────────────────────────────────────
-    
     /**
-     * @brief Copy assignment
+     * @brief Convert to normalized float [0.0, 1.0]
      */
-    constexpr octo& operator=(const octo& other) noexcept = default;
+    constexpr float to_normalized() const noexcept {
+        return static_cast<float>(value_) / static_cast<float>(N - 1);
+    }
     
-    /**
-     * @brief Assign from integer (modulo N)
-     */
-    constexpr octo& operator=(uint8_t v) noexcept {
-        value_ = v % N;
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMPARISON OPERATORS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    constexpr bool operator==(const O& other) const noexcept {
+        return value_ == other.value_;
+    }
+    
+    constexpr bool operator!=(const O& other) const noexcept {
+        return value_ != other.value_;
+    }
+    
+    constexpr bool operator<(const O& other) const noexcept {
+        return value_ < other.value_;
+    }
+    
+    constexpr bool operator<=(const O& other) const noexcept {
+        return value_ <= other.value_;
+    }
+    
+    constexpr bool operator>(const O& other) const noexcept {
+        return value_ > other.value_;
+    }
+    
+    constexpr bool operator>=(const O& other) const noexcept {
+        return value_ >= other.value_;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // ARITHMETIC OPERATORS (modulo N)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    constexpr O operator+(const O& other) const noexcept {
+        return O((value_ + other.value_) % N);
+    }
+    
+    constexpr O operator-(const O& other) const noexcept {
+        return O((value_ + N - other.value_) % N);
+    }
+    
+    constexpr O operator*(const O& other) const noexcept {
+        return O((value_ * other.value_) % N);
+    }
+    
+    constexpr O& operator+=(const O& other) noexcept {
+        value_ = (value_ + other.value_) % N;
         return *this;
     }
     
-    // ───────────────────────────────────────────────────────────────────────
-    // Increment/Decrement
-    // ───────────────────────────────────────────────────────────────────────
+    constexpr O& operator-=(const O& other) noexcept {
+        value_ = (value_ + N - other.value_) % N;
+        return *this;
+    }
     
-    /**
-     * @brief Pre-increment (modular)
-     */
-    constexpr octo& operator++() noexcept {
+    constexpr O& operator*=(const O& other) noexcept {
+        value_ = (value_ * other.value_) % N;
+        return *this;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // INCREMENT/DECREMENT (cyclic)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    constexpr O& operator++() noexcept {
         value_ = (value_ + 1) % N;
         return *this;
     }
     
-    /**
-     * @brief Post-increment (modular)
-     */
-    constexpr octo operator++(int) noexcept {
-        octo temp = *this;
+    constexpr O operator++(int) noexcept {
+        O temp = *this;
         ++(*this);
         return temp;
     }
     
-    /**
-     * @brief Pre-decrement (modular)
-     */
-    constexpr octo& operator--() noexcept {
+    constexpr O& operator--() noexcept {
         value_ = (value_ + N - 1) % N;
         return *this;
     }
     
-    /**
-     * @brief Post-decrement (modular)
-     */
-    constexpr octo operator--(int) noexcept {
-        octo temp = *this;
+    constexpr O operator--(int) noexcept {
+        O temp = *this;
         --(*this);
         return temp;
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONVERSION
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    explicit constexpr operator uint8_t() const noexcept { return value_; }
+    explicit constexpr operator int() const noexcept { return static_cast<int>(value_); }
+    explicit constexpr operator bool() const noexcept { return value_ != 0; }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPARISON OPERATORS
+// TYPE ALIASES FOR COMMON CASES
 // ═══════════════════════════════════════════════════════════════════════════
 
-template<uint8_t N>
-constexpr bool operator==(octo<N> a, octo<N> b) noexcept {
-    return a.value() == b.value();
-}
+using O2 = O<2>;      ///< Binary
+using O3 = O<3>;      ///< Ternary
+using O4 = O<4>;      ///< Quaternary
+using O8 = O<8>;      ///< Octovalent (3ODS)
+using O16 = O<16>;    ///< Hexadecimal
+using O32 = O<32>;    ///< 32-state
+using O64 = O<64>;    ///< 64-state
+using O256 = O<256>;  ///< Full byte
 
+// Legacy alias for compatibility
 template<uint8_t N>
-constexpr bool operator!=(octo<N> a, octo<N> b) noexcept {
-    return !(a == b);
-}
-
-template<uint8_t N>
-constexpr bool operator<(octo<N> a, octo<N> b) noexcept {
-    return a.value() < b.value();
-}
-
-template<uint8_t N>
-constexpr bool operator>(octo<N> a, octo<N> b) noexcept {
-    return b < a;
-}
-
-template<uint8_t N>
-constexpr bool operator<=(octo<N> a, octo<N> b) noexcept {
-    return !(a > b);
-}
-
-template<uint8_t N>
-constexpr bool operator>=(octo<N> a, octo<N> b) noexcept {
-    return !(a < b);
-}
+using octo = O<N>;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ARRAY TYPE
+// ARRAY TYPE FOR MULTI-STATE REGISTERS
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Fixed-size array of N-state values
+ * @brief Array of O<N> values (register)
  * 
- * @tparam N Number of states per element
- * @tparam M Array size
+ * Represents a register of Size values, each with N states.
+ * Useful for representing quantum registers, memory words, etc.
  */
-template<uint8_t N, size_t M>
-class octo_array {
-private:
-    std::array<octo<N>, M> data_;
-    
-public:
-    // ───────────────────────────────────────────────────────────────────────
-    // Constructors
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr octo_array() noexcept = default;
-    
-    constexpr octo_array(std::initializer_list<uint8_t> init) {
-        size_t i = 0;
-        for (auto val : init) {
-            if (i >= M) break;
-            data_[i++] = octo<N>(val);
-        }
-    }
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Element Access
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr octo<N>& operator[](size_t i) noexcept {
-        return data_[i];
-    }
-    
-    constexpr const octo<N>& operator[](size_t i) const noexcept {
-        return data_[i];
-    }
-    
-    constexpr octo<N>& at(size_t i) {
-        if (i >= M) throw std::out_of_range("octo_array index out of range");
-        return data_[i];
-    }
-    
-    constexpr const octo<N>& at(size_t i) const {
-        if (i >= M) throw std::out_of_range("octo_array index out of range");
-        return data_[i];
-    }
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Size & Capacity
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr size_t size() const noexcept { return M; }
-    constexpr bool empty() const noexcept { return M == 0; }
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Iterators
-    // ───────────────────────────────────────────────────────────────────────
-    
-    auto begin() noexcept { return data_.begin(); }
-    auto end() noexcept { return data_.end(); }
-    auto begin() const noexcept { return data_.begin(); }
-    auto end() const noexcept { return data_.end(); }
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Fill
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr void fill(octo<N> value) noexcept {
-        for (auto& elem : data_) {
-            elem = value;
-        }
-    }
-};
+template<uint8_t N, size_t Size>
+using O_array = std::array<O<N>, Size>;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MATRIX TYPE
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Matrix of N-state values
- * 
- * @tparam N Number of states per element
- * @tparam R Number of rows
- * @tparam C Number of columns
- */
-template<uint8_t N, size_t R, size_t C>
-class octo_matrix {
-private:
-    std::array<octo<N>, R * C> data_;  // Row-major storage
-    
-public:
-    // ───────────────────────────────────────────────────────────────────────
-    // Constructors
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr octo_matrix() noexcept = default;
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Element Access
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr octo<N>& operator()(size_t i, size_t j) noexcept {
-        return data_[i * C + j];
-    }
-    
-    constexpr const octo<N>& operator()(size_t i, size_t j) const noexcept {
-        return data_[i * C + j];
-    }
-    
-    constexpr octo<N>& at(size_t i, size_t j) {
-        if (i >= R || j >= C) {
-            throw std::out_of_range("octo_matrix index out of range");
-        }
-        return data_[i * C + j];
-    }
-    
-    constexpr const octo<N>& at(size_t i, size_t j) const {
-        if (i >= R || j >= C) {
-            throw std::out_of_range("octo_matrix index out of range");
-        }
-        return data_[i * C + j];
-    }
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Size
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr size_t rows() const noexcept { return R; }
-    constexpr size_t cols() const noexcept { return C; }
-    constexpr size_t size() const noexcept { return R * C; }
-    
-    // ───────────────────────────────────────────────────────────────────────
-    // Fill
-    // ───────────────────────────────────────────────────────────────────────
-    
-    constexpr void fill(octo<N> value) noexcept {
-        for (auto& elem : data_) {
-            elem = value;
-        }
-    }
-};
-
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPE TRAITS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Check if type is octo<N>
- */
-template<typename T>
-struct is_octo : std::false_type {};
+// Common register sizes
+template<uint8_t N>
+using O_reg8 = O_array<N, 8>;
 
 template<uint8_t N>
-struct is_octo<octo<N>> : std::true_type {};
-
-template<typename T>
-inline constexpr bool is_octo_v = is_octo<T>::value;
-
-/**
- * @brief Extract N from octo<N>
- */
-template<typename T>
-struct octo_num_states;
+using O_reg16 = O_array<N, 16>;
 
 template<uint8_t N>
-struct octo_num_states<octo<N>> {
-    static constexpr uint8_t value = N;
-};
+using O_reg32 = O_array<N, 32>;
 
-template<typename T>
-inline constexpr uint8_t octo_num_states_v = octo_num_states<T>::value;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// UTILITY FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Check if all values are equal
- */
-template<uint8_t N, typename... Args>
-constexpr bool octo_all_equal(octo<N> first, Args... rest) {
-    return ((first == rest) && ...);
-}
-
-/**
- * @brief Check if any value equals target
- */
 template<uint8_t N>
-constexpr bool octo_any_equal(octo<N> target, 
-                               std::initializer_list<octo<N>> values) {
-    for (auto v : values) {
-        if (v == target) return true;
-    }
-    return false;
-}
-
-/**
- * @brief Minimum of two octo values
- */
-template<uint8_t N>
-constexpr octo<N> octo_min(octo<N> a, octo<N> b) noexcept {
-    return (a < b) ? a : b;
-}
-
-/**
- * @brief Maximum of two octo values
- */
-template<uint8_t N>
-constexpr octo<N> octo_max(octo<N> a, octo<N> b) noexcept {
-    return (a > b) ? a : b;
-}
+using O_reg64 = O_array<N, 64>;
 
 } // namespace o
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STD::NUMERIC_LIMITS SPECIALIZATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+namespace std {
+    template<uint8_t N>
+    struct numeric_limits<o::O<N>> {
+        static constexpr bool is_specialized = true;
+        static constexpr o::O<N> min() noexcept { return o::O<N>::min_value(); }
+        static constexpr o::O<N> max() noexcept { return o::O<N>::max_value(); }
+        static constexpr o::O<N> lowest() noexcept { return o::O<N>::min_value(); }
+        static constexpr int digits = 0; // Not applicable
+        static constexpr bool is_signed = false;
+        static constexpr bool is_integer = true;
+        static constexpr bool is_exact = true;
+        static constexpr bool is_modulo = true;
+    };
+}
 
 #endif // O_CORE_HPP
